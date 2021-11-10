@@ -13,6 +13,41 @@ import math
 
 
 def pinta(x, y, x_ac, y_ac, xlbl, ylbl, xlim, ylim, pos_leyenda, a, lbl, colors):
+    """
+    Pinta las graficas de los ejercicios
+
+    Parameters
+    ----------
+    x : list(list)
+        valores del eje x iniciales (tiene que ser un array de arrays, aunque solo tenga un elemento).
+    y : list(list)
+        valores del eje y iniciales (tiene que ser un array de arrays, aunque solo tenga un elemento).
+    x_ac : list(list)
+        valores del eje x actuales (tiene que ser un array de arrays, aunque solo tenga un elemento)..
+    y_ac : list(list)
+        valores del eje y actuales (tiene que ser un array de arrays, aunque solo tenga un elemento)..
+    xlbl : str
+        label del eje x.
+    ylbl : str
+        label del eje y.
+    xlim : tuple
+        limites del eje x.
+    ylim : tuple
+        limites del eje y.
+    pos_leyenda : str
+        posicion de la segunda leyenda.
+    a : bool
+        si es True se invierte el eje x.
+    lbl : list
+        lista con las label para utilizar en la leyenda de masas.
+    colors : list
+        lista con los colores para utilizar en la leyenda de masas.
+
+    Returns
+    -------
+    None.
+
+    """
     plt.close()
     plt.clf()
     fig, ax = plt.subplots()
@@ -41,8 +76,26 @@ def pinta(x, y, x_ac, y_ac, xlbl, ylbl, xlim, ylim, pos_leyenda, a, lbl, colors)
 
    
 def hace_array(array_dfs, column):
+    """
+    Funcion que crea un array con valores de una magnitud para las 6 masas. Por ejemplo,
+    un array con las luminosidades de las 6 masas. Sirve para los primeros plots
+
+    Parameters
+    ----------
+    array_dfs : list
+        lista con los datos de las 6 estrellas.
+    column : str
+        parametro para extraer los datos.
+
+    Returns
+    -------
+    np.ndarray
+        array con el valor de una magnitud 'column' para las 6 masas.
+
+    """
     return np.array([i[column] for i in array_dfs])
   
+    
 def tabla_latex(tabla, ind, col):
     """
     Prints an array in latex format
@@ -85,12 +138,13 @@ def main():
     df = []
     data = ['0_1_solar_masses/summary.txt', '0_5_solar_masses/summary.txt', '1_solar_masses/summary.txt',
             '2_solar_masses/summary.txt', '3_solar_masses/summary.txt', '4_5_solar_masses/summary.txt']
-
+    
+    # Guarda en una lista los datos para cada masa. Los datos de cada masa estan guardados en un pandas.Dataframe
     for i in range(6):
         a = np.genfromtxt(data[i])
         df.append(pd.DataFrame(a[:, :], columns=column_labels, index=[a[:, 1]]))
     
-
+    # Algoritmo para buscar los datos 123 millones de años despues de que se formase la estrella
     closest_index = []
     step = []
     minimo = math.inf
@@ -105,7 +159,8 @@ def main():
 
         closest_index.append(aux)
         step.append(str(int(aux2)))
-        
+    
+    # Separa los datos iniciales y actuales del resto, para manipularlos mas facilmente
     iniciales = [i.loc[0, :] for i in df]
     actuales = [i.loc[closest_index[j]] for j, i in enumerate(df)]
 
@@ -123,15 +178,8 @@ def main():
               hace_array(actuales, 'central_temperature'), np.log10(hace_array(actuales, 'y_c')/hace_array(actuales, 'x_c')), 
               r'$\log_{10}{T_c}$(K)', r'$\log_{10}{(\frac{Y_c}{X_c})}$', (6.4, 7.7), (-0.5, 1.3), 'upper center', True, labels, colors)
    
-        lum_total = hace_array(actuales, 'luminosity')
-        lum_3_alpha = hace_array(actuales, 'luminosity_3_alpha')
-
-        a = hace_array(actuales, 'luminosity_pp')
-        b = hace_array(actuales, 'luminosity_cno')
-        c = hace_array(actuales, 'luminosity_neutrino')
-        print("Porcentaje de reacciones triple alpha frente al total", (lum_3_alpha / (a+b+c) * 100)[-2:])
-
     
+    # Guarda datos detallados para la estrella mas masiva en el momento de su formacion y en la actualidad
     detailed_data = np.genfromtxt('4_5_solar_masses/structure_00000.txt')
     df_detailed = pd.DataFrame(detailed_data, columns=column_labels_detailed)
     
@@ -148,21 +196,18 @@ def main():
         pinta([df_detailed['Radius coordinate']], [np.log10(df_detailed['Power per unit mass from all nuclear reactions'])], 
               [df_detailed_actual['Radius coordinate']], [np.log10(df_detailed_actual['Power per unit mass from all nuclear reactions'])],
               r'$\frac{r}{{R}_\odot}$', r'$\log_{10}{(\epsilon_{nuc}}$(CGS))', (0, 0.2), (3, 4.5), 'lower center', False, [labels[-1]], [colors[-1]+'-'])
-        print(df_detailed_actual['Power per unit mass from gravitational contraction']/df_detailed_actual['Power per unit mass from all nuclear reactions'])
 
 
-
+    # Tabla con las luminosidades para las dos masas mayores
     lumin_pp = [i['luminosity_pp'].iloc[0] for i in actuales[-2:]]
     lumin_cno = [i['luminosity_cno'].iloc[0] for i in actuales[-2:]]
     lumin_3a = [i['luminosity_3_alpha'].iloc[0] for i in actuales[-2:]]
     t = [10**i['central_temperature'].iloc[0] for i in actuales[-2:]]
 
     tabla = np.array([lumin_pp, lumin_cno, lumin_3a, t])
-    #print(tabla_latex(tabla, ind=['3 M$_\odot$', '4.5 M$_\odot$'], col=['$L_{pp}$', '$L_{CNO}$', '$L_{3\alpha}$', 'T']))
+    print(tabla_latex(tabla, ind=['3 M$_\odot$', '4.5 M$_\odot$'], col=['$L_{pp}$', '$L_{CNO}$', '$L_{3\alpha}$', 'T']))
     
-    
-    print(10**iniciales[-1]['radius'])
-    print(10**actuales[-1]['radius'])
+    # Descomentar para pintar las graficas
     #ej1()
     #ej2()
     #ej3()
